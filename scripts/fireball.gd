@@ -45,4 +45,6 @@ func _physics_process(delta: float) -> void:
 func _on_body_entered(body: Node2D) -> void:
 	if body.has_method("take_damage"):
 		body.take_damage(1)
+		if body.has_method("apply_status"):
+			body.apply_status("burn")
 		queue_free()

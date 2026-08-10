@@ -10,6 +10,8 @@ var e_speed: float = 80.0
 var e_archetype: String = "chaser"
 var e_xp: int = 2
 
+var active_effects: Array = []  # StatusEffect[]
+
 var player: Player = null
 var contact_timer: float = 0.0
 var shoot_timer: float = 0.0
@@ -101,6 +103,9 @@ func _physics_process(delta: float) -> void:
 				velocity = dir * e_speed * 1.3
 				move_and_slide()
 	
+	# Status-Effekte ticken
+	_tick_effects(delta)
+	
 	# Kontakt-Schaden
 	contact_timer -= delta
 	if dist < 20 and contact_timer <= 0:
@@ -126,6 +131,13 @@ func take_damage(amount: int) -> void:
 	update_hp_bar()
 	
 	if e_hp <= 0:
+		# XP-Orbs spawnen
+		for i in range(randi_range(1, 3)):
+			var orb: Area2D = preload("res://scenes/xp_orb.tscn").instantiate()
+			orb.position = global_position + Vector2(randi_range(-10,10), randi_range(-10,10))
+			orb.set("xp_value", max(1, e_xp / 2))
+			get_parent().add_child(orb)
+		
 		if data.get("behavior", {}).get("explode_on_death", false) and not death_exploded:
 			death_exploded = true
 			_explode()
@@ -142,3 +154,33 @@ func _explode() -> void:
 func update_hp_bar() -> void:
 	if hp_bar:
 		hp_bar.size.x = 32.0 * e_hp / e_max_hp
+
+
+func apply_status(effect_id: String) -> void:
+	var se := StatusEffect.new()
+	match effect_id:
+		"burn":
+			se.id = "burn"; se.duration = 4.0; se.value = 1; se.color = Color.ORANGE_RED
+		"freeze":
+			se.id = "freeze"; se.duration = 2.0; se.value = 0; se.color = Color.CYAN
+		"poison":
+			se.id = "poison"; se.duration = 6.0; se.value = 1; se.color = Color.GREEN
+		_:
+			return
+	se.apply(self)
+	active_effects.append(se)
+
+
+func _tick_effects(delta: float) -> void:
+	var to_remove := []
+	for se in active_effects:
+		if se.tick(delta, self):
+			to_remove.append(se)
+	for se in to_remove:
+		active_effects.erase(se)
+	
+	# Visuelles Feedback
+	if active_effects.size() > 0:
+		modulate = active_effects[0].color
+	else:
+		modulate = Color.WHITE

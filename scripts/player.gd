@@ -9,6 +9,12 @@ var hp := MAX_HP
 var mobile: Node = null
 var fire_cooldown: float = 0.0
 
+# XP & Level
+var xp: int = 0
+var level: int = 1
+var xp_to_next: int = 10
+var damage_bonus: int = 0
+
 
 func _ready() -> void:
 	add_to_group("player")
@@ -37,11 +43,9 @@ func _physics_process(delta: float) -> void:
 		fire_cooldown = FIRE_RATE
 		_cast_fireball()
 	
-	# HP-Bar updaten
 	var bar: ColorRect = get_node_or_null("HPBar")
 	if bar:
 		bar.size.x = 40.0 * hp / MAX_HP
-		bar.position = Vector2(-20, -24)
 
 
 func _cast_fireball() -> void:
@@ -51,16 +55,16 @@ func _cast_fireball() -> void:
 	if mobile:
 		var aim: Vector2 = mobile.get_aim()
 		if aim != Vector2.ZERO:
-			dir = aim.normalized()
+			dir = aim
 		else:
 			var mov: Vector2 = mobile.get_movement()
 			if mov != Vector2.ZERO:
-				dir = mov.normalized()
+				dir = mov
 	else:
 		var md: Vector2 = get_global_mouse_position() - global_position
 		if md != Vector2.ZERO:
-			dir = md.normalized()
-	fb.set("direction", dir)
+			dir = md
+	fb.set("direction", dir.normalized() if dir != Vector2.ZERO else Vector2.RIGHT)
 	get_parent().add_child(fb)
 
 
@@ -71,3 +75,20 @@ func take_damage(_amount: int) -> void:
 	modulate = Color.WHITE
 	if hp <= 0:
 		queue_free()
+
+
+func add_xp(amount: int) -> void:
+	xp += amount
+	if xp >= xp_to_next:
+		_level_up()
+
+
+func _level_up() -> void:
+	level += 1
+	xp -= xp_to_next
+	xp_to_next = int(xp_to_next * 1.5)
+	damage_bonus += 1
+	# Flash
+	modulate = Color.GOLD
+	await get_tree().create_timer(0.2).timeout
+	modulate = Color.WHITE
