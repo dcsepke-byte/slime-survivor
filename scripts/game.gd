@@ -12,6 +12,10 @@ func _ready() -> void:
 	add_child(mobile_ui)
 	player.setup_mobile(mobile_ui)
 	
+	# Dev Mode (F1 zum aktivieren)
+	var dev: Node = preload("res://scenes/dev_mode.tscn").instantiate()
+	add_child(dev)
+	
 	_enter_room("start_cell")
 	_create_hud()
 
