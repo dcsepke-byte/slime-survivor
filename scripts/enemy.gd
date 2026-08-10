@@ -149,6 +149,8 @@ func _explode() -> void:
 		var dist: float = global_position.distance_to(n.global_position)
 		if dist < 60:
 			n.take_damage(e_damage * 2)
+			if n.has_method("apply_status"):
+				n.apply_status("burn")
 
 
 func update_hp_bar() -> void:
