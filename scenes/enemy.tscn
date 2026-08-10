@@ -17,3 +17,15 @@ scale = Vector2(2, 2)
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("CircleShape2D_e")
+
+[node name="HPBg" type="ColorRect" parent="."]
+color = Color(0.3, 0.1, 0.1, 0.8)
+size = Vector2(32, 4)
+position = Vector2(-16, -20)
+mouse_filter = 2
+
+[node name="HPBar" type="ColorRect" parent="."]
+color = Color(1, 0.2, 0.2, 1)
+size = Vector2(32, 4)
+position = Vector2(-16, -20)
+mouse_filter = 2

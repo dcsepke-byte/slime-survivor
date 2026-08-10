@@ -18,5 +18,8 @@ scale = Vector2(2, 2)
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("CircleShape2D_p")
 
-[node name="SpellSpawn" type="Marker2D" parent="."]
-position = Vector2(20, 0)
+[node name="HPBar" type="ColorRect" parent="."]
+color = Color(0.2, 1, 0.2, 1)
+size = Vector2(40, 5)
+position = Vector2(-20, -24)
+mouse_filter = 2

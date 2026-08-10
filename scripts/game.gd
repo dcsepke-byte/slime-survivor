@@ -44,8 +44,10 @@ func _spawn_room(room_id: int) -> void:
 			player.position = Vector2(130, 200)
 			var boss: Enemy = _spawn_enemy(Vector2(350, 180))
 			boss.hp = 8
+			boss.max_hp = 8
 			boss.modulate = Color.RED
 			boss.scale = Vector2(2, 2)
+			boss.update_hp_bar()
 	
 	_update_hud()
 
