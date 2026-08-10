@@ -56,7 +56,7 @@ func _cast_fireball() -> void:
 	
 	var dir := Vector2.RIGHT
 	if mobile:
-		var mov := mobile.get_movement()
+		var mov: Vector2 = mobile.get_movement()
 		if mov != Vector2.ZERO:
 			dir = mov.normalized()
 	else:
