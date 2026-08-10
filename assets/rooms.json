@@ -1,0 +1,80 @@
+[
+  {
+    "id": "start_cell",
+    "name": "Startzelle",
+    "room_type": "safe",
+    "size": [14, 10],
+    "difficulty": 0,
+    "enemy_budget": 0,
+    "spawn_points": 0,
+    "loot": { "enabled": false },
+    "doors": { "minimum": 1, "maximum": 2 },
+    "hazards": { "allowed": false },
+    "secrets": { "allowed": false }
+  },
+  {
+    "id": "combat_small",
+    "name": "Wachraum",
+    "room_type": "combat",
+    "size": [16, 12],
+    "difficulty": 1,
+    "enemy_budget": 4,
+    "spawn_points": 3,
+    "loot": { "enabled": true, "quality": "common" },
+    "doors": { "minimum": 1, "maximum": 3 },
+    "hazards": { "allowed": false },
+    "secrets": { "allowed": false }
+  },
+  {
+    "id": "combat_medium",
+    "name": "Baracke",
+    "room_type": "combat",
+    "size": [20, 16],
+    "difficulty": 2,
+    "enemy_budget": 8,
+    "spawn_points": 5,
+    "loot": { "enabled": true, "quality": "uncommon" },
+    "doors": { "minimum": 2, "maximum": 4 },
+    "hazards": { "allowed": true },
+    "secrets": { "allowed": false }
+  },
+  {
+    "id": "combat_large",
+    "name": "Arena",
+    "room_type": "combat",
+    "size": [24, 20],
+    "difficulty": 3,
+    "enemy_budget": 14,
+    "spawn_points": 8,
+    "loot": { "enabled": true, "quality": "rare" },
+    "doors": { "minimum": 2, "maximum": 4 },
+    "hazards": { "allowed": true },
+    "secrets": { "allowed": true }
+  },
+  {
+    "id": "treasure",
+    "name": "Schatzkammer",
+    "room_type": "treasure",
+    "size": [12, 10],
+    "difficulty": 0,
+    "enemy_budget": 0,
+    "spawn_points": 0,
+    "loot": { "enabled": true, "quality": "rare", "bonus": true },
+    "doors": { "minimum": 1, "maximum": 1 },
+    "hazards": { "allowed": false },
+    "secrets": { "allowed": true }
+  },
+  {
+    "id": "boss_room",
+    "name": "Thronsaal",
+    "room_type": "boss",
+    "size": [24, 20],
+    "difficulty": 5,
+    "enemy_budget": 25,
+    "spawn_points": 1,
+    "loot": { "enabled": true, "quality": "legendary" },
+    "doors": { "minimum": 1, "maximum": 1 },
+    "hazards": { "allowed": true },
+    "secrets": { "allowed": false }
+  }
+]
