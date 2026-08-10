@@ -1,63 +1,68 @@
 extends CanvasLayer
+## Mobile Touch-Steuerung mit Multi-Touch und Screen-Zonen
 
-var joystick_active := false
+var joystick_id := -1
 var joystick_center := Vector2.ZERO
-var joystick_radius := 80.0
-var movement_vector := Vector2.ZERO
-var last_touch_id := -1
+var movement := Vector2.ZERO
 
-@onready var joystick_bg: ColorRect = $JoystickBG
-@onready var joystick_knob: ColorRect = $JoystickBG/Knob
+var fire_queued := false
+var dash_queued := false
 
-signal fire_pressed
-signal dash_pressed
+@onready var knob: ColorRect = $Knob
+@onready var bg: ColorRect = $Bg
 
 
 func _ready() -> void:
-	joystick_bg.visible = false
+	bg.visible = false
+	knob.visible = false
 
 
 func _input(event: InputEvent) -> void:
-	var vs: Vector2 = get_viewport().get_visible_rect().size
-	var mid_x := vs.x * 0.5
+	var vs := get_viewport().get_visible_rect().size
+	var half := vs.x * 0.5
 	
 	if event is InputEventScreenTouch:
 		if event.pressed:
-			if event.position.x < mid_x:
-				# LINKE Zone = Joystick — merke Touch-ID für Multi-Touch
-				joystick_active = true
-				last_touch_id = event.index
+			if event.position.x < half:
+				# Joystick starten
+				joystick_id = event.index
 				joystick_center = event.position
-				joystick_bg.position = joystick_center - Vector2(joystick_radius, joystick_radius)
-				joystick_bg.visible = true
-				_update_joystick(event.position)
+				bg.position = joystick_center - Vector2(80, 80)
+				bg.visible = true
+				knob.position = joystick_center - Vector2(25, 25)
+				knob.visible = true
 			else:
-				# RECHTE Zone = Aktionen (eigener Touch, stört Joystick nicht)
+				# Aktion: rechts oben = Feuer, rechts unten = Dash
 				if event.position.y < vs.y * 0.5:
-					fire_pressed.emit()
+					fire_queued = true
 				else:
-					dash_pressed.emit()
+					dash_queued = true
 		else:
-			# Loslassen — nur wenn ES der Joystick-Touch war
-			if event.index == last_touch_id:
-				joystick_active = false
-				joystick_bg.visible = false
-				movement_vector = Vector2.ZERO
-				joystick_knob.position = Vector2(joystick_radius, joystick_radius)
-				last_touch_id = -1
+			if event.index == joystick_id:
+				joystick_id = -1
+				bg.visible = false
+				knob.visible = false
+				movement = Vector2.ZERO
 	
-	elif event is InputEventScreenDrag and joystick_active and event.index == last_touch_id:
-		_update_joystick(event.position)
-
-
-func _update_joystick(pos: Vector2) -> void:
-	var offset := pos - joystick_center
-	var dist := offset.length()
-	if dist > joystick_radius:
-		offset = offset.normalized() * joystick_radius
-	joystick_knob.position = offset + Vector2(joystick_radius, joystick_radius)
-	movement_vector = offset / joystick_radius
+	elif event is InputEventScreenDrag and event.index == joystick_id:
+		var offset := event.position - joystick_center
+		if offset.length() > 80:
+			offset = offset.normalized() * 80
+		knob.position = joystick_center + offset - Vector2(25, 25)
+		movement = offset / 80.0
 
 
 func get_movement() -> Vector2:
-	return movement_vector
+	return movement
+	
+func pop_fire() -> bool:
+	if fire_queued:
+		fire_queued = false
+		return true
+	return false
+	
+func pop_dash() -> bool:
+	if dash_queued:
+		dash_queued = false
+		return true
+	return false

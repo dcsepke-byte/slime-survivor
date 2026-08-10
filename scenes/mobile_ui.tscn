@@ -1,4 +1,4 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=2 format=3]
 
 [ext_resource type="Script" path="res://scripts/mobile_ui.gd" id="1"]
 
@@ -6,21 +6,12 @@
 layer = 100
 script = ExtResource("1")
 
-[node name="JoystickBG" type="ColorRect" parent="."]
-color = Color(1, 1, 1, 0.15)
+[node name="Bg" type="ColorRect" parent="."]
+color = Color(1, 1, 1, 0.12)
 size = Vector2(160, 160)
 mouse_filter = 2
 
-[node name="Knob" type="ColorRect" parent="JoystickBG"]
-color = Color(1, 1, 1, 0.4)
-size = Vector2(60, 60)
-position = Vector2(50, 50)
-mouse_filter = 2
-
-[node name="ZoneFire" type="ColorRect" parent="."]
-color = Color(1, 0.3, 0, 0.08)
-mouse_filter = 2
-
-[node name="ZoneDash" type="ColorRect" parent="."]
-color = Color(0.3, 0.5, 1, 0.08)
+[node name="Knob" type="ColorRect" parent="."]
+color = Color(1, 1, 1, 0.3)
+size = Vector2(50, 50)
 mouse_filter = 2
