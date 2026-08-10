@@ -38,14 +38,14 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 	
 	# Dash
-	var want_dash := Input.is_key_pressed(KEY_SHIFT) or (mobile and mobile.pop_dash())
+	var want_dash: bool = Input.is_key_pressed(KEY_SHIFT) or (mobile and mobile.pop_dash())
 	if want_dash and dash_cooldown <= 0 and input != Vector2.ZERO:
 		dash_timer = 0.15
 		dash_cooldown = 0.8
 		dash_dir = input.normalized()
 	
 	# Feuern
-	var want_fire := Input.is_key_pressed(KEY_SPACE) or (mobile and mobile.pop_fire())
+	var want_fire: bool = Input.is_key_pressed(KEY_SPACE) or (mobile and mobile.pop_fire())
 	if want_fire:
 		_cast_fireball()
 

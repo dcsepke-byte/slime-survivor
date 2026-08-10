@@ -45,7 +45,7 @@ func _input(event: InputEvent) -> void:
 				movement = Vector2.ZERO
 	
 	elif event is InputEventScreenDrag and event.index == joystick_id:
-		var offset := event.position - joystick_center
+		var offset: Vector2 = event.position - joystick_center
 		if offset.length() > 80:
 			offset = offset.normalized() * 80
 		knob.position = joystick_center + offset - Vector2(25, 25)
