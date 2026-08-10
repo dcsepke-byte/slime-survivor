@@ -1,13 +1,11 @@
 extends CharacterBody2D
 class_name Enemy
-## Enemy with HP bar overhead
+## Vampire-Survivors-Pattern: Verfolgt Spieler mit direction_to()
 
 var hp: int = 3
-var max_hp: int = hp
-var patrol_dir: float = 1.0
-var _timer: float = 0.0
-
-const SPEED := 60.0
+var max_hp: int = 3
+var player: Player = null
+const SPEED := 80.0
 
 @onready var hp_bar: ColorRect = $HPBar
 @onready var hp_bg: ColorRect = $HPBg
@@ -16,15 +14,18 @@ const SPEED := 60.0
 func _ready() -> void:
 	add_to_group("enemy")
 	update_hp_bar()
+	# Spieler finden
+	var players := get_tree().get_nodes_in_group("player")
+	if players.size() > 0:
+		player = players[0]
 
 
-func _physics_process(delta: float) -> void:
-	_timer += delta
-	if _timer > 2.0:
-		_timer = 0.0
-		patrol_dir *= -1.0
-	velocity = Vector2(patrol_dir * SPEED, 0)
-	move_and_slide()
+func _physics_process(_delta: float) -> void:
+	if player:
+		# Vampire-Survivors-Chase: direction_to()
+		var dir: Vector2 = global_position.direction_to(player.global_position)
+		velocity = dir * SPEED
+		move_and_slide()
 
 
 func take_damage(amount: int) -> void:
@@ -40,7 +41,3 @@ func take_damage(amount: int) -> void:
 func update_hp_bar() -> void:
 	if hp_bar:
 		hp_bar.size.x = 32.0 * hp / max_hp
-	if hp_bg:
-		hp_bg.position = Vector2(-16, -20)
-	if hp_bar:
-		hp_bar.position = Vector2(-16, -20)
