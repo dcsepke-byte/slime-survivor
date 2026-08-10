@@ -1,0 +1,16 @@
+[
+  {"id":"burn","name":"Burn","icon":"🔥","effect":"hp_percent_per_sec","value":3,"duration":4,"stack":"refresh","color":"#ff6600"},
+  {"id":"freeze","name":"Freeze","icon":"❄️","effect":"cant_move","value":0,"duration":2,"stack":"none","color":"#66ccff"},
+  {"id":"shock","name":"Shock","icon":"⚡","effect":"slow","value":50,"duration":3,"stack":"none","color":"#ffff00"},
+  {"id":"poison","name":"Poison","icon":"🧪","effect":"hp_percent_per_sec","value":2,"duration":6,"stack":"x5","color":"#33ff33"},
+  {"id":"bleed","name":"Bleed","icon":"🩸","effect":"flat_per_sec","value":5,"duration":4,"stack":"x3","color":"#cc0000"},
+  {"id":"curse","name":"Curse","icon":"🌑","effect":"damage_dealt_pct","value":-30,"duration":5,"stack":"refresh","color":"#6600cc"},
+  {"id":"slow","name":"Slow","icon":"🐌","effect":"move_speed_pct","value":-40,"duration":3,"stack":"refresh","color":"#8888ff"},
+  {"id":"stun","name":"Stun","icon":"💫","effect":"cant_act","value":0,"duration":1.5,"stack":"none","color":"#ffff00"},
+  {"id":"silence","name":"Silence","icon":"🔇","effect":"no_abilities","value":0,"duration":4,"stack":"none","color":"#cc66ff"},
+  {"id":"weakness","name":"Weakness","icon":"💪","effect":"damage_dealt_pct","value":-25,"duration":5,"stack":"refresh","color":"#888888"},
+  {"id":"vulnerability","name":"Vulnerability","icon":"🎯","effect":"damage_taken_pct","value":50,"duration":4,"stack":"refresh","color":"#ff4444"},
+  {"id":"regeneration","name":"Regeneration","icon":"💚","effect":"hp_percent_per_sec","value":2,"duration":5,"stack":"refresh","color":"#33ff33"},
+  {"id":"shield","name":"Shield","icon":"🛡️","effect":"absorb_next_hit","value":1,"duration":-1,"stack":"none","color":"#4488ff"},
+  {"id":"invulnerability","name":"Invulnerability","icon":"⭐","effect":"immune_damage","value":1,"duration":2,"stack":"none","color":"#ffcc00"}
+]

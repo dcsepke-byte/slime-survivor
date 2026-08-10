@@ -1,0 +1,13 @@
+[
+  {"id":"physical","name":"Physical","icon":"🗡️","color":"#ffffff","strong_vs":[],"weak_vs":["armor"],"status":"bleed"},
+  {"id":"fire","name":"Fire","icon":"🔥","color":"#ff6600","strong_vs":["ice","undead"],"weak_vs":["water","demon"],"status":"burn"},
+  {"id":"ice","name":"Ice","icon":"❄️","color":"#66ccff","strong_vs":["fire","beast"],"weak_vs":["ice","golem"],"status":"freeze"},
+  {"id":"lightning","name":"Lightning","icon":"⚡","color":"#ffff00","strong_vs":["water","metal"],"weak_vs":["ground"],"status":"shock"},
+  {"id":"poison","name":"Poison","icon":"🧪","color":"#33ff33","strong_vs":["organic"],"weak_vs":["mech","undead"],"status":"poison"},
+  {"id":"arcane","name":"Arcane","icon":"✨","color":"#cc66ff","strong_vs":["physical"],"weak_vs":["arcane"],"status":"silence"},
+  {"id":"shadow","name":"Shadow","icon":"🌑","color":"#6600cc","strong_vs":["holy","life"],"weak_vs":["shadow"],"status":"curse"},
+  {"id":"holy","name":"Holy","icon":"☀️","color":"#ffcc00","strong_vs":["shadow","undead"],"weak_vs":["holy"],"status":"blind"},
+  {"id":"bleed","name":"Bleed","icon":"🩸","color":"#cc0000","strong_vs":["organic"],"weak_vs":["armor","mech"],"status":"bleed"},
+  {"id":"explosion","name":"Explosion","icon":"💥","color":"#ff8800","strong_vs":["group","swarm"],"weak_vs":[],"status":"knockback"},
+  {"id":"true_damage","name":"True Damage","icon":"💀","color":"#ff00ff","strong_vs":["ALL"],"weak_vs":[],"status":null}
+]
