@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<meta name="deploy" content="2026-08-12-remove-meta-progression">
+<title>Slime Survivor</title>
+<style>
+*{margin:0;padding:0;-webkit-tap-highlight-color:transparent;box-sizing:border-box}
+body{background:#0f1117;font-family:monospace}
+canvas{display:block;width:100vw;height:100vh;position:fixed;top:0;left:0;z-index:1;touch-action:none}
+#menu{display:none}
+#hud{position:fixed;top:4px;left:4px;color:#fff;font-size:10px;z-index:5;background:rgba(0,0,0,0.5);padding:4px 8px;border-radius:4px}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="hud"></div>
+<div id="menu"></div>
+<div id="charPick" style="display:block;position:fixed;top:0;left:0;width:100%;height:100%;background:#1a1a3e;z-index:999;text-align:center;padding-top:40px">
+<h1 style="color:#ff0;font-size:22px">🧪 Wähle deinen Schleim</h1><br>
+<button onclick="st('g')" style="display:block;width:80%;max-width:300px;margin:10px auto;padding:15px;background:#333;color:#4f8;border:2px solid #4f8;border-radius:10px;font-size:16px"><b>Grünschleim</b><br><small style="color:#fff">Ausgeglichen | HP:8 DMG:2 SPD:130</small></button>
+<button onclick="st('r')" style="display:block;width:80%;max-width:300px;margin:10px auto;padding:15px;background:#333;color:#f44;border:2px solid #f44;border-radius:10px;font-size:16px"><b>Rotschleim</b><br><small style="color:#fff">+50% DMG, -35% HP | HP:5 DMG:3 SPD:140</small></button>
+<button onclick="st('b')" style="display:block;width:80%;max-width:300px;margin:10px auto;padding:15px;background:#333;color:#48f;border:2px solid #48f;border-radius:10px;font-size:16px"><b>Blauschleim</b><br><small style="color:#fff">+75% HP, -25% Spd | HP:14 DMG:1 SPD:100</small></button>
+</div>
+<script>
+const W=640,H=360;
+const c=document.getElementById('c');
+c.width=W;c.height=H;c.style.width='100vw';c.style.height='56.25vw';
+c.style.maxHeight='100vh';c.style.maxWidth=(100/56.25*100)+'vh';
+const ctx=c.getContext('2d');ctx.imageSmoothingEnabled=false;
+
+// CRITICAL: st() FIRST so onclick buttons work even if script crashes later
+window.st=function(id){
+  try{
+  let c=CH[id];player={x:W/2,y:H/2,w:14,h:14,hp:c.h,mh:c.h,s:c.s,d:c.d,f:c.f,c:c.c,ls:0,trait:c.trait,dodge:(c.trait==='ghost'?0.15:0),goldMult:(c.trait==='greed'?2:1)};
+  if(c.trait==='ice'){ab.freeze=true;player.d=Math.max(1,player.d-1)}
+  document.getElementById('charPick').style.display='none';
+  started=true;weapons=[];equipWeapon('wand');nw();
+  }catch(e){document.getElementById('hud').innerText='ERR:'+(e.message||e);document.getElementById('hud').style.color='red';document.getElementById('hud').style.fontSize='16px'}
+};
+
+const hud=document.getElementById('hud');
+const menu=document.getElementById('menu');
+
+// State
+let player,enemies=[],fireballs=[],orbs=[],coins=[],dmgNums=[];
+let wave=0,kills=0,xp=0,level=1,xpNext=10,gold=0,score=0;
+let over=false,active=false,timer=0;
+let camX=0,camY=0;
+let joyL={a:false,sx:0,sy:0,vx:0,vy:0},joyR={a:false,sx:0,sy:0,vx:0,vy:0};
+let fireCD=0,inv=0,spawnCD=0,shakeX=0,shakeY=0,levelFlash=0;
+let started=false,critChance=0,critDmg=2;
+// Weapon system
+let weapons=[],weaponSlots=2;
+const WEAPONS={
+  wand:{n:'Zauberstab',c:'#aaf',dmg:1,spd:0.3,cnt:1,spread:0,desc:'Schnell, einzeln',tier:1},
+  shot:{n:'Schrotflinte',c:'#fa0',dmg:2,spd:0.6,cnt:3,spread:0.3,desc:'3 Schuss, Streuung',tier:1},
+  snipe:{n:'Scharfschütze',c:'#f44',dmg:5,spd:1.2,cnt:1,spread:0,pierce:!0,desc:'Langsam, durchschlagend',tier:2},
+  cross:{n:'Armbrust',c:'#0f0',dmg:3,spd:0.5,cnt:2,spread:0.15,desc:'2 Schuss, mittel',tier:2},
+  staff:{n:'Stab',c:'#f0f',dmg:4,spd:0.9,cnt:1,spread:0,expl:!0,desc:'Explosiv, langsam',tier:3},
+  dagger:{n:'Dolch',c:'#fff',dmg:1,spd:0.12,cnt:1,spread:0,desc:'Sehr schnell',tier:1},
+};
+function equipWeapon(id){if(weapons.length<weaponSlots)weapons.push({...WEAPONS[id],id});}
+let weaponCDs={};
+// Special abilities (keep existing)
+let ab={multishot:0,pierce:false,explosive:false,freeze:false,magnet:0,shieldCD:0,shieldActive:false,aura:0,chain:false,bounce:false};
+
+// Rarity tiers
+const R={c:{name:'⬜ Gewöhnlich',color:'#ccc',mult:1},r:{name:'🟦 Selten',color:'#4af',mult:1.5},e:{name:'🟨 Episch',color:'#e8b04b',mult:2.5}};
+function rollRarity(){let n=Math.random();if(n<0.1)return R.e;if(n<0.3)return R.r;return R.c;}
+const CH={
+  g:{n:'Grün',c:'#4f8',h:10,s:130,d:2,f:0.3,t:'Ausgeglichen',trait:''},
+  r:{n:'Rot',c:'#f44',h:7,s:140,d:3,f:0.25,t:'+50% DMG, -30% HP',trait:'dmgUp'},
+  b:{n:'Blau',c:'#48f',h:16,s:100,d:1,f:0.35,t:'+60% HP, -25% Spd',trait:'tank'},
+  y:{n:'Gold',c:'#e8b04b',h:7,s:120,d:1,f:0.3,t:'+100% Gold, -25% HP',trait:'greed'},
+  p:{n:'Geist',c:'#f8f',h:4,s:140,d:2,f:0.25,t:'+15% Dodge, -50% HP',trait:'ghost'},
+  i:{n:'Eis',c:'#8cf',h:7,s:110,d:1,f:0.4,t:'Start: Freeze, -30% DMG',trait:'ice'},
+};
+const ED={g:{h:3,d:2,s:60,c:'#4f8',x:1,o:1},r:{h:5,d:3,s:50,c:'#f44',x:2,o:2},t:{h:2,d:1,s:140,c:'#a6f',x:1,o:1},a:{h:4,d:2,s:45,c:'#ccc',x:2,o:3,g:1,proj:'🔴'},e:{h:3,d:3,s:80,c:'#f80',x:2,o:3,b:1,blast:60},k:{h:10,d:2,s:30,c:'#88f',x:4,o:4,z:18},h:{h:3,d:2,s:80,c:'#f8f',x:3,o:3,p:1},B:{h:40,d:5,s:35,c:'#f00',x:25,o:25,z:28,g:1,w:1,proj:'💀',blast:80},c:{h:2,d:2,s:200,c:'#ff0',x:1,o:1,charge:!0},s:{h:4,d:1,s:50,c:'#0f0',x:2,o:2,spit:!0}};
+// Brotato-style items: ALL have tradeoffs!
+const IT=[
+  {n:'👽 Alien Wurm',p:15,d:'+3 HP +2 Regen, -1 Heilung',f:()=>{player.mh+=3;player.hp+=3;player.hpRegen=(player.hpRegen||0)+2}},
+  {n:'🦎 Baby Gecko',p:18,d:'+10 Range, 25% Magnet',f:()=>{ab.magnet=Math.min(50,ab.magnet+25)}},
+  {n:'🎒 Tasche',p:15,d:'+15 Mats bei Kiste, -1% Spd',f:()=>{player.s*=0.99;player.crateBonus=(player.crateBonus||0)+15}},
+  {n:'🧪 Säure',p:65,d:'+8 HP, -2% Dodge',f:()=>{player.mh+=8;player.hp+=8;player.dodge=Math.max(0,(player.dodge||0)-2)}},
+  {n:'🦾 Legierung',p:80,d:'+3 All-DMG +5%Crit, -6%Dodge',f:()=>{player.d+=3;critChance=Math.min(80,critChance+5);player.dodge=Math.max(0,(player.dodge||0)-6)}},
+  {n:'💪 Adrenalin',p:60,d:'+5% Dodge, 50% Heal 5 bei Ausweichen',f:()=>{player.dodge=(player.dodge||0)+5;player.dodgeHeal=true}},
+  {n:'🎀 Bandana',p:75,d:'Pierce +1 Ziel, -10% DMG',f:()=>{ab.pierce=true;player.d=Math.max(1,Math.floor(player.d*0.9))}},
+  {n:'⚓ Kugelkette',p:75,d:'+15% DMG +3 Rüstung, -3% Spd',f:()=>{player.d+=Math.floor(player.d*0.15);player.s*=0.97;player.armor=(player.armor||0)+3}},
+  {n:'🐘 Baby-Elefant',p:22,d:'25% Schaden beim Aufsammeln',f:()=>{ab.elephant=true}},
+  {n:'🕯️ Kerze',p:20,d:'-5% Gegner, -2% DMG',f:()=>{player.d=Math.max(1,player.d-1)}},
+  {n:'🚩 Schwarze Flagge',p:25,d:'+10% Gegner, +5% DMG',f:()=>{player.d+=Math.floor(player.d*0.1)}},
+  {n:'🐌 Schnecke',p:15,d:'-5% Gegner-Speed, -3% Spd',f:()=>{player.s*=0.97}},
+  {n:'💰 Sparschwein',p:45,d:'+20% Gold bei Wellenstart',f:()=>{player.harvesting=(player.harvesting||0)+20}},
+  {n:'🍀 Glücksklee',p:40,d:'+10 Luck, -3 HP',f:()=>{player.mh=Math.max(1,player.mh-3);player.hp=Math.min(player.hp,player.mh);player.luck=(player.luck||0)+10}},
+  {n:'🍄 Alien-Baby',p:80,d:'+15 HP, +10% Gegner-HP',f:()=>{player.mh+=15;player.hp+=15;player.enemyHpMult=(player.enemyHpMult||1)+0.1}},
+  // Weapons
+  {n:'🔫 Schrotflinte',p:35,d:'Waffe: 3 Schuss, Streuung',f:()=>equipWeapon('shot')},
+  {n:'🏹 Armbrust',p:45,d:'Waffe: 2 Schuss, mittel',f:()=>equipWeapon('cross')},
+  {n:'🔮 Stab',p:65,d:'Waffe: Explosiv',f:()=>equipWeapon('staff')},
+  {n:'🎯 Scharfschütze',p:55,d:'Waffe: Pierce, stark',f:()=>equipWeapon('snipe')},
+];
+// Brotato upgrade tiers (I-IV)
+const UT={
+  maxHp:[3,6,9,12],hpRegen:[2,3,4,5],lifesteal:[1,2,3,4],dmg:[5,8,12,16],
+  melee:[2,4,6,8],ranged:[1,2,3,4],atkSpd:[5,10,15,20],crit:[3,5,7,9],
+  armor:[1,2,3,4],dodge:[3,6,9,12],speed:[3,6,9,12],luck:[5,10,15,20]
+};
+function getTier(){let n=Math.random();if(level>=25&&level%5===0)return 3;if(level>=10)return n<0.1?3:n<0.4?2:n<0.8?1:0;if(level>=5)return n<0.3?2:n<0.7?1:0;return 0;}
+function tierName(t){return['I','II','III','IV'][t]}
+
+function r(a,b){return Math.random()*(b-a)+a}
+function ri(a,b){return Math.floor(r(a,b+1))}
+function d(a,b){return Math.hypot(a.x-b.x,a.y-b.y)}
+
+function pool(w){let p=['g'];if(w>2)p.push('r','t');if(w>4)p.push('a','e');if(w>6)p.push('k');if(w>8)p.push('h');if(w>10)p.push('B');return p}
+function se(id){
+  let e=ED[id];if(!e)return;let z=e.z||12;
+  let ed=ri(0,3),x,y;
+  if(ed===0){x=r(4,40);y=r(4,H-4)}else if(ed===1){x=r(W-40,W-4);y=r(4,H-4)}
+  else if(ed===2){x=r(4,W-4);y=r(4,40)}else{x=r(4,W-4);y=r(H-40,H-4)}
+  let hp=e.h+Math.floor(wave*0.5);if(e.w)hp+=wave*2;
+  let dmg=Math.max(1,Math.floor(e.d*(0.65+wave*0.05))); // easier scaling
+  enemies.push({id,x,y,w:z,h:z,hp:Math.max(1,hp),mh:Math.max(1,hp),d:dmg,s:e.s+wave*3,c:e.c,xp:e.x,gl:e.o,r:!!e.g,ex:!!e.b,b:!!e.w,p:!!e.p,sc:0,cc:0,pc:0,pa:false,proj:e.proj,blast:e.blast||0});
+}
+
+function nw(){wave++;enemies=[];fireballs=[];orbs=[];coins=[];dmgNums=[];active=true;timer=22+wave*2;spawnCD=0;if(player.harvesting)gold+=Math.floor(player.harvesting*(1+wave*0.1));let p=pool(wave);let count=2+wave*2;for(let i=0;i<count;i++)se(p[ri(0,p.length-1)]);if(wave%5===0){for(let k=0;k<1+Math.floor(wave/10);k++)se('B');}}
+
+// Shoot
+function sh(){
+  for(let i=0;i<cnt;i++){
+    let angle=Math.atan2(dy,dx)+(i-Math.floor(cnt/2))*spread;
+    let cdx=Math.cos(angle),cdy=Math.sin(angle);
+    fireballs.push({x:player.x,y:player.y,dx:cdx*300,dy:cdy*300,life:0,pierce:ab.pierce,expl:ab.explosive,freeze:ab.freeze});
+  }
+}
+
+function up(dt){
+  try{
+  if(!started||over||!active)return;if(menu.classList.contains('active'))return;dt=Math.min(dt,0.1);inv=Math.max(0,inv-dt);timer-=dt;
+  spawnCD-=dt;if(spawnCD<=0&&enemies.length<(3+wave*2)){let p=pool(wave);se(p[ri(0,p.length-1)]);spawnCD=1.5/Math.sqrt(wave);}
+  let mx=0,my=0;if(joyL.a){mx=joyL.vx;my=joyL.vy}
+  if(keys.w||keys.ArrowUp)my=-1;if(keys.s||keys.ArrowDown)my=1;if(keys.a||keys.ArrowLeft)mx=-1;if(keys.d||keys.ArrowRight)mx=1;
+  let ml=Math.hypot(mx,my)||1;player.x+=(mx/ml)*player.s*dt;player.y+=(my/ml)*player.s*dt;
+  player.x=Math.max(8,Math.min(W-8,player.x));player.y=Math.max(8,Math.min(H-8,player.y));
+  // HP Regen
+  if(player.hpRegen>0&&player.hp<player.mh){player._regenT=(player._regenT||0)+dt;let interval=1/player.hpRegen*0.5;if(player._regenT>=interval){player.hp=Math.min(player.mh,player.hp+1);player._regenT-=interval}}
+  fireCD-=dt;levelFlash=Math.max(0,levelFlash-dt);
+  // Weapon auto-fire — always on, aims at nearest enemy
+  for(let w of weapons){
+    weaponCDs[w.id]=(weaponCDs[w.id]||0)-dt;
+    if(weaponCDs[w.id]<=0){
+      weaponCDs[w.id]=w.spd;
+      // Find nearest enemy
+      let target=null,md=999;
+      for(let e of enemies){let dd=d({x:player.x,y:player.y},e);if(dd<md){md=dd;target=e}}
+      let dx=1,dy=0;
+      if(target){let l=Math.hypot(target.x-player.x,target.y-player.y)||1;dx=(target.x-player.x)/l;dy=(target.y-player.y)/l}
+      for(let i=0;i<w.cnt;i++){
+        let angle=Math.atan2(dy,dx)+(i-Math.floor(w.cnt/2))*w.spread;
+        fireballs.push({x:player.x,y:player.y,dx:Math.cos(angle)*280,dy:Math.sin(angle)*280,life:0,dmg:w.dmg+player.d,pierce:w.pierce,expl:w.expl,color:w.c});
+      }
+    }
+  }
+  // Fireball trails
+  for(let f of fireballs)if(Math.random()<0.3)dmgNums.push({x:f.x,y:f.y,t:0.6,v:'•',cl:f.en?'#f44':'#fa0'});
+  // Shield
+  if(ab.shieldActive){ab.shieldCD-=dt;if(ab.shieldCD<=0){ab.shieldCD=20;inv=1.5;dmgNums.push({x:player.x,y:player.y-20,t:0,v:'🛡️',cl:'#4af'});}}
+  // Poison aura
+  if(ab.aura>0){for(let e of enemies){if(d(e,player)<30+ab.aura*8)e.hp-=ab.aura*0.5*dt;}}
+  for(let i=fireballs.length-1;i>=0;i--){let f=fireballs[i];f.x+=f.dx*dt;f.y+=f.dy*dt;f.life+=dt;
+    // Bounce off walls
+    if(ab.bounce&&(f.x<5||f.x>W-5)){f.dx*=-1;f.x=f.x<5?5:W-5}
+    if(ab.bounce&&(f.y<5||f.y>H-5)){f.dy*=-1;f.y=f.y<5?5:H-5}
+    if(f.life>3||f.x<-20||f.x>W+20||f.y<-20||f.y>H+20){fireballs.splice(i,1);continue}
+    let hit=false;
+    for(let j=enemies.length-1;j>=0;j--){let e=enemies[j],sz=(e.w+e.h)/2;if(d(f,e)<sz/1.2){
+      let isCrit=Math.random()*100<critChance;let dmg=(f.dmg||player.d)*(isCrit?critDmg:1);
+      e.hp-=dmg;hit=true;dmgNums.push({x:e.x,y:e.y-12,t:0,v:Math.floor(dmg),cl:isCrit?'#ff0':'#fff'});
+      if(player.ls)player.hp=Math.min(player.mh,player.hp+player.ls);
+      // Explosive
+      if(f.expl){for(let k=enemies.length-1;k>=0;k--){if(k!==j&&d(e,enemies[k])<50)enemies[k].hp-=player.d;}}
+      // Freeze
+      if(f.freeze)e.stun=0.8;
+      // Chain lightning
+      if(ab.chain){let chained=0;for(let k=enemies.length-1;k>=0&&chained<3;k--){if(k!==j&&d(e,enemies[k])<70){enemies[k].hp-=Math.ceil(player.d*0.5);chained++;}}}
+      if(e.hp<=0)ke(j);
+      if(!f.pierce)break;
+    }}
+    if(hit&&!f.pierce){fireballs.splice(i,1);i--}
+  }
+  for(let i=enemies.length-1;i>=0;i--){let e=enemies[i];if(e.p){e.pc-=dt;if(e.pc<=0){e.pc=3;e.pa=!e.pa}}if(e.pa)continue;
+    let di=d(e,player),v={x:player.x-e.x,y:player.y-e.y},vl=Math.hypot(v.x,v.y)||1;
+    if(e.r&&di<80){v.x=-v.x;v.y=-v.y}e.x+=v.x/vl*e.s*dt;e.y+=v.y/vl*e.s*dt;
+    if(e.r){e.sc-=dt;if(e.sc<=0&&di<280){e.sc=e.b?(e.hp<e.mh/2?0.3:0.5):1.8;let bd={x:player.x-e.x,y:player.y-e.y},bl=Math.hypot(bd.x,bd.y)||1;fireballs.push({x:e.x,y:e.y,dx:bd.x/bl*220,dy:bd.y/bl*220,life:0,en:1})}}
+    if(di<20&&e.cc<=0&&inv<=0){let dodged=player.dodge&&Math.random()*100<player.dodge;if(!dodged){let dmg=e.d;if(player.armor>0)dmg=Math.max(1,Math.floor(dmg*(1-player.armor/150)));player.hp-=dmg;dmgNums.push({x:player.x,y:player.y-16,t:0,v:dmg,cl:'#f44'});shakeX=r(-3,3);shakeY=r(-3,3)}else{dmgNums.push({x:player.x,y:player.y-16,t:0,v:'Miss',cl:'#fff'});if(player.dodgeHeal&&Math.random()<0.5)player.hp=Math.min(player.mh,player.hp+5)}e.cc=0.5;inv=0.3;}
+  }
+  for(let i=fireballs.length-1;i>=0;i--){let f=fireballs[i];if(f.en&&d(f,player)<16&&inv<=0){player.hp--;fireballs.splice(i,1);inv=0.2;dmgNums.push({x:player.x,y:player.y-16,t:0,v:1,cl:'#f88'});}}
+  for(let i=orbs.length-1;i>=0;i--){let o=orbs[i],di=d(o,player);let pr=12+ab.magnet;if(di<pr){if(ab.elephant&&Math.random()<0.25){let t=null,md=999;for(let e of enemies){let dd=d(o,e);if(dd<md){md=dd;t=e}}if(t&&md<100)t.hp-=1}xp+=o.v;score+=5;if(xp>=xpNext){xp-=xpNext;level++;xpNext=Math.floor(xpNext*1.5);su()}orbs.splice(i,1);continue}let sp=180+100/Math.max(0.1,di);o.x+=(player.x-o.x)/di*sp*dt;o.y+=(player.y-o.y)/di*sp*dt;}
+  for(let i=coins.length-1;i>=0;i--){let gc=coins[i],di=d(gc,player);if(di<12){gold+=gc.v*(player.goldMult||1);coins.splice(i,1);continue}let sp=150+80/Math.max(0.1,di);gc.x+=(player.x-gc.x)/di*sp*dt;gc.y+=(player.y-gc.y)/di*sp*dt;}
+  for(let i=dmgNums.length-1;i>=0;i--){dmgNums[i].t+=dt;dmgNums[i].y-=50*dt;if(dmgNums[i].t>0.8)dmgNums.splice(i,1);}
+  // Screen shake decay
+  shakeX*=0.9;shakeY*=0.9;if(Math.abs(shakeX)<0.1)shakeX=0;if(Math.abs(shakeY)<0.1)shakeY=0;
+  if(player.hp<=0){over=true;active=false;sd()}
+  if(timer<=0||enemies.length===0){active=false;if(enemies.length===0)score+=25*wave;setTimeout(ss,500);}
+  }catch(e){hud.innerText='ERR:'+(e.message||e);hud.style.color='red';over=true;active=false}
+}
+
+function ke(i){let e=enemies[i];score+=(e.gl||2)*10+wave;
+  for(let p=0;p<8;p++)dmgNums.push({x:e.x+r(-10,10),y:e.y+r(-10,10),t:0,v:'•',cl:e.c});
+  // Explosion visual
+  if(e.blast>0){dmgNums.push({x:e.x,y:e.y,t:0,v:'💥',cl:'#f80'});
+    for(let p=0;p<12;p++)dmgNums.push({x:e.x+r(-e.blast,e.blast),y:e.y+r(-e.blast,e.blast),t:0,v:'•',cl:'#f80'});}
+  if(e.ex){for(let j=enemies.length-1;j>=0;j--){if(j!==i&&d(e,enemies[j])<60)enemies[j].hp-=3}if(d(e,player)<60&&inv<=0){player.hp-=2;inv=0.3};shakeX=r(-5,5);shakeY=r(-5,5)}
+  orbs.push({x:e.x+r(-5,5),y:e.y+r(-5,5),v:e.xp||2});coins.push({x:e.x+r(-5,5),y:e.y+r(-5,5),v:e.gl||2});kills++;enemies.splice(i,1);}
+
+// Shop
+let si=[];
+function ss(){si=[];let p=[...IT];for(let i=0;i<6&&p.length;i++){let idx=ri(0,p.length-1);let it=p.splice(idx,1)[0];let r=rollRarity();si.push({...it,rarity:r,price:Math.floor(it.p*r.mult)});}
+  let h=`<h2>🛒 Shop — Welle ${wave}</h2><p style="color:#e8b04b">💰 Gold: ${gold}</p><p style="color:#aaa;font-size:11px">HP:${player.hp}/${player.mh} DMG:${player.d} SPD:${Math.floor(player.s)} Lv.${level}</p><div class="grid">`;
+  si.forEach((it,i)=>h+=`<div class="btn" onclick="by(${i})" style="border-color:${it.rarity.color}"><div class="n" style="color:${it.rarity.color}">${it.n}</div><div class="p">💰 ${it.price}</div><div class="d">${it.rarity.name}</div></div>`);
+  h+=`</div><div class="btn" onclick="rr()"><div class="n">🎲 Reroll (5g)</div></div><div class="btn" onclick="cl()"><div class="n">⚔️ Nächste Welle</div></div>`;
+  menu.innerHTML=h;menu.classList.add('active');
+}function rr(){if(gold<5)return;gold-=5;ss()}function by(i){if(gold<si[i].price)return;gold-=si[i].price;si[i].f(player);ss()}function cl(){menu.classList.remove('active');player.hp=Math.min(player.mh,player.hp+1);nw()}
+
+// Level up — Brotato tiers
+let lu=[];
+function su(){lu=[];let t=getTier();let tn=tierName(t);levelFlash=0.3;
+  let stats=['❤️ Max HP','🩸 Leech','💪 DMG%','🎯 Crit','🛡️ Rüstung','👟 Speed','🍀 Luck','💨 AtkSpd'];
+  let keys=['maxHp','lifesteal','dmg','crit','armor','speed','luck','atkSpd'];
+  for(let i=0;i<4;i++){let k=keys[i];lu.push({n:stats[i]+' '+tn,v:UT[k][t],key:k})}
+  let h=`<h2>⭐ Level Up! (${level}) — Tier ${tn}</h2><div class="grid">`;
+  lu.forEach((u,i)=>h+=`<div class="btn" onclick="pl(${i})"><div class="n">${u.n}</div><div class="d">+${u.v}</div></div>`);
+  h+='</div>';menu.innerHTML=h;menu.classList.add('active');
+}
+function pl(i){
+  let u=lu[i];
+  if(u.key==='maxHp'){player.mh+=u.v;player.hp+=u.v}
+  else if(u.key==='lifesteal')player.ls=(player.ls||0)+u.v
+  else if(u.key==='dmg')player.d+=u.v
+  else if(u.key==='crit')critChance=Math.min(80,critChance+u.v)
+  else if(u.key==='armor')player.armor=(player.armor||0)+u.v
+  else if(u.key==='speed')player.s+=u.v
+  else if(u.key==='luck'){/*luck affects rarity*/}
+  else if(u.key==='atkSpd')player.f=Math.max(0.05,player.f*(1-u.v/100))
+  menu.classList.remove('active');
+}
+
+// Death
+function sd(){
+  menu.innerHTML=`<h2>💀 Game Over</h2><p style="color:#fff">Welle ${wave} | Kills: ${kills} | Gold: ${gold}</p><p style="color:#aaa">Score: ${score}</p><div class="btn" onclick="location.reload()"><div class="n">🔄 Neustart</div></div>`;
+  menu.classList.add('active');
+}
+
+function draw(){
+  try{_draw()}catch(e){ctx.fillStyle='#f00';ctx.fillRect(0,0,W,H);ctx.fillStyle='#fff';ctx.font='14px monospace';ctx.fillText('ERR:'+e.message,10,20)}}
+function _draw(){
+  ctx.fillStyle='#1a1a2e';ctx.fillRect(0,0,W,H);
+  // Grid
+  ctx.strokeStyle='rgba(255,255,255,0.06)';ctx.lineWidth=0.5;
+  for(let x=0;x<W;x+=40){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke()}
+  for(let y=0;y<H;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}
+  // Bright border
+  ctx.strokeStyle='rgba(255,255,255,0.2)';ctx.lineWidth=2;ctx.strokeRect(3,3,W-6,H-6);
+  // Status text if no player
+  if(!started){/* Meta-Shop hardcoded — no text needed */}
+  ctx.save();ctx.translate(shakeX||0,shakeY||0);
+  // Enemies
+  enemies.forEach(e=>{
+    let r=Math.max(7,e.w*0.6);
+    ctx.save();
+    if(e.stun>0)ctx.globalAlpha=0.5;
+    if(e.b){ctx.fillStyle=e.c;ctx.beginPath();ctx.arc(e.x,e.y,r*1.4,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#f00';ctx.lineWidth=3;ctx.stroke()} // boss
+    else if(e.r){ctx.fillStyle=e.c;ctx.fillRect(e.x-r/2,e.y-r*1.5,r,3);ctx.fillRect(e.x-r,Math.max(e.y-r,e.y+r-3),r*2,3);ctx.beginPath();ctx.arc(e.x,e.y,r,0,Math.PI*2);ctx.fill()} // archer
+    else if(e.ex){ctx.fillStyle=e.c;ctx.fillRect(e.x-r,e.y-r,r*2,r*2)} // exploder
+    else if(e.p){ctx.fillStyle='rgba(248,0,248,0.4)';ctx.beginPath();ctx.arc(e.x,e.y,r,0,Math.PI*2);ctx.fill()} // ghost
+    else{ctx.fillStyle=e.c;ctx.beginPath();ctx.arc(e.x,e.y,r,0,Math.PI*2);ctx.fill()} // normal
+    ctx.restore();
+    ctx.fillStyle='#600';ctx.fillRect(e.x-r,e.y-r-7,r*2,4);
+    ctx.fillStyle='#f44';ctx.fillRect(e.x-r,e.y-r-7,r*2*e.hp/e.mh,4);
+  });
+  // Player with sprite
+  if(player){
+    // Shield glow
+    if(inv>0&&ab.shieldActive){ctx.beginPath();ctx.arc(player.x,player.y,20,0,Math.PI*2);ctx.strokeStyle='rgba(100,170,255,0.6)';ctx.lineWidth=3;ctx.stroke()}
+    // Poison aura
+    if(ab.aura>0){ctx.beginPath();ctx.arc(player.x,player.y,40+ab.aura*10,0,Math.PI*2);ctx.fillStyle='rgba(100,255,0,0.08)';ctx.fill()}
+    let r=10;
+    ctx.beginPath();ctx.arc(player.x,player.y,r,0,Math.PI*2);
+    ctx.fillStyle=player.c;ctx.fill();
+    ctx.strokeStyle='#fff';ctx.lineWidth=2;ctx.stroke();
+    ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(player.x-4,player.y-3,2,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(player.x+4,player.y-3,2,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#030';ctx.fillRect(player.x-r,player.y-r-10,r*2,5);
+    ctx.fillStyle=player.hp<=2?'#f44':'#4f8';ctx.fillRect(player.x-r,player.y-r-10,r*2*player.hp/player.mh,5);
+  }
+  orbs.forEach(o=>{ctx.fillStyle='#0f0';ctx.beginPath();ctx.arc(o.x,o.y,6,0,Math.PI*2);ctx.fill()});
+  coins.forEach(g=>{ctx.fillStyle='#fc0';ctx.beginPath();ctx.arc(g.x,g.y,5,0,Math.PI*2);ctx.fill()});
+  fireballs.forEach(f=>{ctx.fillStyle=typeof f.color==='string'?f.color:(f.en?'#f00':'#fa0');ctx.beginPath();ctx.arc(f.x,f.y,f.en?8:6,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=1;ctx.stroke()});
+  dmgNums.forEach(dn=>{ctx.fillStyle=dn.cl;ctx.font='bold 14px monospace';ctx.globalAlpha=Math.max(0,1-dn.t);ctx.fillText(dn.v,dn.x-14,dn.y)});
+  ctx.globalAlpha=1; //ctx.restore(); — disabled translate
+  // Level-up flash
+  if(levelFlash>0){ctx.fillStyle='rgba(255,255,255,'+(levelFlash*0.5)+')';ctx.fillRect(0,0,W,H)}
+  if(player)hud.innerText='⚔W'+wave+' ⏱'+Math.ceil(Math.max(0,timer))+'s ❤'+player.hp+'/'+player.mh+' 💪'+player.d+' 🎯'+critChance+'% ⭐'+level+' 💰'+gold;
+  else hud.innerText='Wähle einen Schleim';
+  [{j:joyL,c:'rgba(255,255,255,0.06)'},{j:joyR,c:'rgba(255,150,50,0.1)'}].forEach(s=>{if(s.j.a){ctx.beginPath();ctx.arc(s.j.sx,s.j.sy,50,0,Math.PI*2);ctx.fillStyle=s.c;ctx.fill();ctx.beginPath();ctx.arc(s.j.sx+s.j.vx*50,s.j.sy+s.j.vy*50,16,0,Math.PI*2);ctx.fillStyle='rgba(255,255,255,0.15)';ctx.fill();}});
+}
+
+// Input
+const keys={};document.addEventListener('keydown',e=>keys[e.code]=true);document.addEventListener('keyup',e=>keys[e.code]=false);
+function getScale(){return c.getBoundingClientRect().width/W}
+let tl=null,tr=null;
+c.addEventListener('touchstart',e=>{e.preventDefault();let sc=getScale();for(let t of e.changedTouches){let cx=t.clientX/sc,cy=t.clientY/sc;if(cx<W/2){tl=t.identifier;joyL.a=true;joyL.sx=cx;joyL.sy=cy;joyL.vx=0;joyL.vy=0}else{tr=t.identifier;joyR.a=true;joyR.sx=cx;joyR.sy=cy;joyR.vx=0;joyR.vy=0}}});
+c.addEventListener('touchmove',e=>{e.preventDefault();let sc=getScale();for(let t of e.changedTouches){let cx=t.clientX/sc,cy=t.clientY/sc;let j=t.identifier===tl?joyL:(t.identifier===tr?joyR:null);if(!j)continue;let dx=cx-j.sx,dy=cy-j.sy,len=Math.hypot(dx,dy);if(len>50){dx=dx/len*50;dy=dy/len*50}j.vx=dx/50;j.vy=dy/50;}});
+c.addEventListener('touchend',e=>{for(let t of e.changedTouches){if(t.identifier===tl){joyL.a=false;joyL.vx=0;joyL.vy=0;tl=null}if(t.identifier===tr){joyR.a=false;joyR.vx=0;joyR.vy=0;tr=null}}});
+
+let last=performance.now();draw();
+function loop(t){let dt=(t-last)/1000;last=t;up(dt);draw();requestAnimationFrame(loop)}requestAnimationFrame(loop);
+</script></body></html>
