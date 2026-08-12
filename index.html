@@ -46,6 +46,9 @@ const ctx=c.getContext('2d');ctx.imageSmoothingEnabled=false;
 window.st=function(id){
   try{
   let c=CH[id];player={x:W/2,y:H/2,w:14,h:14,hp:c.h,mh:c.h,s:c.s,d:c.d,f:c.f,c:c.c,ls:0,trait:c.trait,dodge:(c.trait==='ghost'?0.15:0),goldMult:(c.trait==='greed'?2:1)};
+  if(c.trait==='dmgUp'){player.d=Math.floor(player.d*1.5)}
+  if(c.trait==='tank'){let b=Math.floor(c.h*0.75);player.mh+=b;player.hp+=b}
+  if(c.trait==='greed'){player.d=Math.max(1,player.d-1)}
   if(c.trait==='ice'){ab.freeze=true;player.d=Math.max(1,player.d-1)}
   document.getElementById('charPick').style.display='none';
   started=true;weapons=[];equipWeapon('wand');nw();
