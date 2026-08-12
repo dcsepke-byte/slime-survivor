@@ -31,8 +31,8 @@ canvas{display:block;width:100vw;height:100vh;position:fixed;top:0;left:0;z-inde
 <div id="menu"></div>
 <div id="charPick" style="display:block;position:fixed;top:0;left:0;width:100%;height:100%;background:#1a1a3e;z-index:999;text-align:center;padding-top:40px">
 <h1 style="color:#ff0;font-size:22px">🧪 Wähle deinen Schleim</h1><br>
-<button onclick="st('g')" style="display:block;width:80%;max-width:300px;margin:10px auto;padding:15px;background:#333;color:#4f8;border:2px solid #4f8;border-radius:10px;font-size:16px"><b>Grünschleim</b><br><small style="color:#fff">Ausgeglichen | HP:10 DMG:2 SPD:130</small></button>
-<button onclick="st('r')" style="display:block;width:80%;max-width:300px;margin:10px auto;padding:15px;background:#333;color:#f44;border:2px solid #f44;border-radius:10px;font-size:16px"><b>Rotschleim</b><br><small style="color:#fff">+50% DMG, -30% HP | HP:7 DMG:3 SPD:140</small></button>
+<button onclick="st('g')" style="display:block;width:80%;max-width:300px;margin:10px auto;padding:15px;background:#333;color:#4f8;border:2px solid #4f8;border-radius:10px;font-size:16px"><b>Grünschleim</b><br><small style="color:#fff">Ausgeglichen | HP:10 DMG:1 SPD:130</small></button>
+<button onclick="st('r')" style="display:block;width:80%;max-width:300px;margin:10px auto;padding:15px;background:#333;color:#f44;border:2px solid #f44;border-radius:10px;font-size:16px"><b>Rotschleim</b><br><small style="color:#fff">+50% DMG, -30% HP | HP:7 DMG:2 SPD:140</small></button>
 <button onclick="st('b')" style="display:block;width:80%;max-width:300px;margin:10px auto;padding:15px;background:#333;color:#48f;border:2px solid #48f;border-radius:10px;font-size:16px"><b>Blauschleim</b><br><small style="color:#fff">+60% HP, -25% Spd | HP:16 DMG:1 SPD:100</small></button>
 </div>
 <script>
@@ -85,14 +85,14 @@ let ab={multishot:0,pierce:false,explosive:false,freeze:false,magnet:0,shieldCD:
 const R={c:{name:'⬜ Gewöhnlich',color:'#ccc',mult:1},r:{name:'🟦 Selten',color:'#4af',mult:1.5},e:{name:'🟨 Episch',color:'#e8b04b',mult:2.5}};
 function rollRarity(){let n=Math.random();if(n<0.1)return R.e;if(n<0.3)return R.r;return R.c;}
 const CH={
-  g:{n:'Grün',c:'#4f8',h:10,s:130,d:2,f:0.3,t:'Ausgeglichen',trait:''},
-  r:{n:'Rot',c:'#f44',h:7,s:140,d:3,f:0.25,t:'+50% DMG, -30% HP',trait:'dmgUp'},
+  g:{n:'Grün',c:'#4f8',h:10,s:130,d:1,f:0.3,t:'Ausgeglichen',trait:''},
+  r:{n:'Rot',c:'#f44',h:7,s:140,d:2,f:0.25,t:'+50% DMG, -30% HP',trait:'dmgUp'},
   b:{n:'Blau',c:'#48f',h:16,s:100,d:1,f:0.35,t:'+60% HP, -25% Spd',trait:'tank'},
   y:{n:'Gold',c:'#e8b04b',h:7,s:120,d:1,f:0.3,t:'+100% Gold, -25% HP',trait:'greed'},
   p:{n:'Geist',c:'#f8f',h:4,s:140,d:2,f:0.25,t:'+15% Dodge, -50% HP',trait:'ghost'},
   i:{n:'Eis',c:'#8cf',h:7,s:110,d:1,f:0.4,t:'Start: Freeze, -30% DMG',trait:'ice'},
 };
-const ED={g:{h:3,d:2,s:60,c:'#4f8',x:1,o:1},r:{h:5,d:3,s:50,c:'#f44',x:2,o:2},t:{h:2,d:1,s:140,c:'#a6f',x:1,o:1},a:{h:4,d:2,s:45,c:'#ccc',x:2,o:3,g:1,proj:'🔴'},e:{h:3,d:3,s:80,c:'#f80',x:2,o:3,b:1,blast:60},k:{h:10,d:2,s:30,c:'#88f',x:4,o:4,z:18},h:{h:3,d:2,s:80,c:'#f8f',x:3,o:3,p:1},B:{h:40,d:5,s:35,c:'#f00',x:25,o:25,z:28,g:1,w:1,proj:'💀',blast:80},c:{h:2,d:2,s:200,c:'#ff0',x:1,o:1,charge:!0},s:{h:4,d:1,s:50,c:'#0f0',x:2,o:2,spit:!0}};
+const ED={g:{h:3,hpw:2.0,d:1,dmgw:0.6,s:60,c:'#4f8',x:1,o:1},r:{h:5,hpw:3.0,d:1,dmgw:0.8,s:50,c:'#f44',x:2,o:2},t:{h:2,hpw:1.5,d:1,dmgw:0.5,s:140,c:'#a6f',x:1,o:1},a:{h:4,hpw:2.5,d:1,dmgw:0.7,s:45,c:'#ccc',x:2,o:3,g:1,proj:'🔴'},e:{h:3,hpw:2.0,d:1,dmgw:0.8,s:80,c:'#f80',x:2,o:3,b:1,blast:60},k:{h:10,hpw:8.0,d:2,dmgw:0.8,s:30,c:'#88f',x:4,o:4,z:18},h:{h:3,hpw:2.0,d:1,dmgw:0.7,s:80,c:'#f8f',x:3,o:3,p:1},B:{h:40,hpw:25.0,d:3,dmgw:1.5,s:35,c:'#f00',x:25,o:25,z:28,g:1,w:1,proj:'💀',blast:80},c:{h:2,hpw:1.5,d:1,dmgw:0.6,s:200,c:'#ff0',x:1,o:1,charge:!0},s:{h:4,hpw:2.0,d:1,dmgw:0.6,s:50,c:'#0f0',x:2,o:2,spit:!0}};
 // Brotato-style items: ALL have tradeoffs!
 const IT=[
   {n:'👽 Alien Wurm',p:15,d:'+3 HP +2 Regen, -1 Heilung',f:()=>{player.mh+=3;player.hp+=3;player.hpRegen=(player.hpRegen||0)+2}},
@@ -135,12 +135,12 @@ function se(id){
   let ed=ri(0,3),x,y;
   if(ed===0){x=r(4,40);y=r(4,H-4)}else if(ed===1){x=r(W-40,W-4);y=r(4,H-4)}
   else if(ed===2){x=r(4,W-4);y=r(4,40)}else{x=r(4,W-4);y=r(H-40,H-4)}
-  let hp=e.h+Math.floor(wave*0.5);if(e.w)hp+=wave*2;
-  let dmg=Math.max(1,Math.floor(e.d*(0.65+wave*0.05))); // easier scaling
+  let hp=e.h+e.hpw*(wave-1);if(e.w)hp+=wave*2;
+  let dmg=Math.max(1,Math.floor(e.d+e.dmgw*(wave-1))); // Brotato linear scaling
   enemies.push({id,x,y,w:z,h:z,hp:Math.max(1,hp),mh:Math.max(1,hp),d:dmg,s:e.s+wave*3,c:e.c,xp:e.x,gl:e.o,r:!!e.g,ex:!!e.b,b:!!e.w,p:!!e.p,sc:0,cc:0,pc:0,pa:false,proj:e.proj,blast:e.blast||0});
 }
 
-function nw(){wave++;enemies=[];fireballs=[];orbs=[];coins=[];dmgNums=[];active=true;timer=22+wave*2;spawnCD=0;if(player.harvesting)gold+=Math.floor(player.harvesting*(1+wave*0.1));let p=pool(wave);let count=2+wave*2;for(let i=0;i<count;i++)se(p[ri(0,p.length-1)]);if(wave%5===0){for(let k=0;k<1+Math.floor(wave/10);k++)se('B');}}
+function nw(){wave++;enemies=[];fireballs=[];orbs=[];coins=[];dmgNums=[];active=true;timer=Math.min(60,20+(wave-1)*5);spawnCD=0;if(player.harvesting)gold+=Math.floor(player.harvesting*(1+wave*0.1));let p=pool(wave);let count=3+wave*3;for(let i=0;i<count;i++)se(p[ri(0,p.length-1)]);if(wave%5===0){for(let k=0;k<1+Math.floor(wave/10);k++)se('B');}}
 
 // Shoot
 function sh(){
@@ -154,7 +154,7 @@ function sh(){
 function up(dt){
   try{
   if(!started||over||!active)return;if(menu.classList.contains('active'))return;dt=Math.min(dt,0.1);inv=Math.max(0,inv-dt);timer-=dt;
-  spawnCD-=dt;if(spawnCD<=0&&enemies.length<(3+wave*2)){let p=pool(wave);se(p[ri(0,p.length-1)]);spawnCD=1.5/Math.sqrt(wave);}
+  spawnCD-=dt;if(spawnCD<=0&&enemies.length<(5+wave*3)){let p=pool(wave);se(p[ri(0,p.length-1)]);spawnCD=Math.max(0.5,2.0/Math.sqrt(wave));}
   let mx=0,my=0;if(joyL.a){mx=joyL.vx;my=joyL.vy}
   if(keys.w||keys.ArrowUp)my=-1;if(keys.s||keys.ArrowDown)my=1;if(keys.a||keys.ArrowLeft)mx=-1;if(keys.d||keys.ArrowRight)mx=1;
   let ml=Math.hypot(mx,my)||1;player.x+=(mx/ml)*player.s*dt;player.y+=(my/ml)*player.s*dt;
